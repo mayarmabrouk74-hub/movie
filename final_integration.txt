@@ -1,0 +1,1689 @@
+﻿=== MOVIES APP FINAL INTEGRATION ===
+
+========== lib\main.dart ==========
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
+
+import 'firebase_options.dart';
+import 'splash_screen.dart';
+
+Future<void> main() async {
+  // Initialize Flutter
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Run the application
+  runApp(const RouteApp());
+}
+
+class RouteApp extends StatelessWidget {
+  const RouteApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+
+      // App Theme
+      theme: ThemeData(
+        textTheme: GoogleFonts.poppinsTextTheme(),
+      ),
+
+      // First Screen
+      home: const SplashScreen(),
+    );
+  }
+}
+
+========== lib\HomeScreen.dart ==========
+
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'search_screen.dart';
+import 'ProfileScreen.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+
+  static const Color yellow = Color(0xFFF6BD00);
+  static const Color bg = Color(0xFF121312);
+
+  final PageController _controller = PageController(
+    viewportFraction: 0.62,
+    initialPage: 1000,
+  );
+
+  Timer? _timer;
+
+  // MAIN CAROUSEL MOVIES
+
+  final List<String> movies = [
+    'assets/movie1.jpg',
+    'assets/onboarding6.png',
+    'assets/movie2.jpg',
+  ];
+
+  // ACTION MOVIES
+
+  final List<String> actionMovies = [
+    'assets/movie2.jpg',
+    'assets/movie3.jpg',
+    'assets/movie4.jpg',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // AUTOMATIC CAROUSEL
+
+    _timer = Timer.periodic(
+      const Duration(seconds: 3),
+      (timer) {
+        if (_controller.hasClients) {
+          _controller.nextPage(
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  // ==========================================
+  // RATING BADGE
+  // ==========================================
+
+  Widget ratingBadge(double screenWidth) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.025,
+        vertical: screenWidth * 0.012,
+      ),
+
+      decoration: BoxDecoration(
+        color: const Color(0xCC282A28),
+        borderRadius: BorderRadius.circular(30),
+      ),
+
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+
+          Text(
+            '7.7',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: (screenWidth * 0.035)
+                  .clamp(11.0, 17.0),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          SizedBox(
+            width: screenWidth * 0.012,
+          ),
+
+          Icon(
+            Icons.star,
+            color: yellow,
+            size: (screenWidth * 0.045)
+                .clamp(14.0, 22.0),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // MAIN MOVIE CARD
+  // ==========================================
+
+  Widget mainMovieCard({
+    required String image,
+    required double width,
+    required double height,
+    required double screenWidth,
+  }) {
+    return SizedBox(
+      width: width,
+      height: height,
+
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(
+          screenWidth * 0.045,
+        ),
+
+        child: Stack(
+          fit: StackFit.expand,
+
+          children: [
+
+            Image.asset(
+              image,
+              fit: BoxFit.cover,
+            ),
+
+            // RATING
+
+            Positioned(
+              top: screenWidth * 0.025,
+              left: screenWidth * 0.025,
+
+              child: ratingBadge(screenWidth),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // ACTION MOVIE CARD
+  // ==========================================
+
+  Widget actionMovieCard({
+    required String image,
+    required double width,
+    required double height,
+    required double screenWidth,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+
+      margin: EdgeInsets.only(
+        right: screenWidth * 0.035,
+      ),
+
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(
+          screenWidth * 0.045,
+        ),
+
+        child: Stack(
+          fit: StackFit.expand,
+
+          children: [
+
+            Image.asset(
+              image,
+              fit: BoxFit.cover,
+            ),
+
+            // RATING
+
+            Positioned(
+              top: screenWidth * 0.025,
+              left: screenWidth * 0.025,
+
+              child: ratingBadge(screenWidth),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // BUILD
+  // ==========================================
+
+  @override
+  Widget build(BuildContext context) {
+
+    final screenSize = MediaQuery.sizeOf(context);
+
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
+
+    // RESPONSIVE SIZES
+
+    final horizontalPadding = screenWidth * 0.035;
+
+    // MAIN CAROUSEL
+
+    final carouselWidth = screenWidth * 0.62;
+
+    final carouselHeight = (carouselWidth * 1.48)
+        .clamp(280.0, 650.0);
+
+    // ACTION CARDS
+
+    final actionCardWidth = (screenWidth * 0.35)
+        .clamp(110.0, 220.0);
+
+    final actionCardHeight = actionCardWidth * 1.55;
+
+    // BOTTOM NAVIGATION
+
+    final bottomNavHeight = (screenHeight * 0.065)
+        .clamp(58.0, 85.0);
+
+    final availableWidth =
+        screenWidth - (horizontalPadding * 2);
+
+    return Scaffold(
+      backgroundColor: bg,
+
+      body: Stack(
+        children: [
+
+          // ==========================================
+          // BACKGROUND IMAGE
+          // ==========================================
+
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+
+            height: screenHeight * 0.68,
+
+            child: Image.asset(
+              'assets/onboarding6.png',
+              width: screenWidth,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+            ),
+          ),
+
+          // ==========================================
+          // BACKGROUND GRADIENT
+          // ==========================================
+
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+
+            height: screenHeight * 0.75,
+
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+
+                  stops: [
+                    0.0,
+                    0.465,
+                    1.0,
+                  ],
+
+                  colors: [
+                    Color.fromRGBO(18, 19, 18, 0.80),
+                    Color.fromRGBO(18, 19, 18, 0.60),
+                    Color(0xFF121312),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // ==========================================
+          // MAIN CONTENT
+          // ==========================================
+
+          SafeArea(
+            child: Column(
+              children: [
+
+                // SCROLLABLE CONTENT
+
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+
+                      children: [
+
+                        SizedBox(
+                          height: screenHeight * 0.018,
+                        ),
+
+                        // ==================================
+                        // AVAILABLE NOW
+                        // ==================================
+
+                        Center(
+                          child: Image.asset(
+                            'assets/available_now.png',
+                            width: screenWidth * 0.66,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+
+                        SizedBox(
+                          height: screenHeight * 0.025,
+                        ),
+
+                        // ==================================
+                        // MAIN CAROUSEL
+                        // ==================================
+
+                        SizedBox(
+                          width: screenWidth,
+                          height: carouselHeight,
+
+                          child: PageView.builder(
+                            controller: _controller,
+                            itemCount: null,
+
+                            itemBuilder: (context, index) {
+
+                              final movie = movies[
+                                index % movies.length
+                              ];
+
+                              return AnimatedBuilder(
+                                animation: _controller,
+
+                                builder: (context, child) {
+
+                                  double page =
+                                      _controller.initialPage
+                                          .toDouble();
+
+                                  if (_controller.position
+                                      .haveDimensions) {
+                                    page = _controller.page ??
+                                        _controller.initialPage
+                                            .toDouble();
+                                  }
+
+                                  final distance =
+                                      (page - index).abs();
+
+                                  // CENTER CARD BIGGER
+
+                                  final scale =
+                                      (1 - distance * 0.22)
+                                          .clamp(0.78, 1.0);
+
+                                  return Center(
+                                    child: Transform.scale(
+                                      scale: scale,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+
+                                child: mainMovieCard(
+                                  image: movie,
+                                  width: carouselWidth,
+                                  height: carouselHeight,
+                                  screenWidth: screenWidth,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                        SizedBox(
+                          height: screenHeight * 0.035,
+                        ),
+
+                        // ==================================
+                        // WATCH NOW
+                        // ==================================
+
+                        Center(
+                          child: Image.asset(
+                            'assets/watch_now.png',
+                            width: screenWidth * 0.88,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+
+                        SizedBox(
+                          height: screenHeight * 0.045,
+                        ),
+
+                        // ==================================
+                        // ACTION HEADER
+                        // ==================================
+
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: horizontalPadding,
+                          ),
+
+                          child: Row(
+                            children: [
+
+                              const Text(
+                                'Action',
+
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 17,
+                                ),
+                              ),
+
+                              const Spacer(),
+
+                              TextButton(
+                                onPressed: () {},
+
+                                child: const Text(
+                                  'See More â†’',
+
+                                  style: TextStyle(
+                                    color: yellow,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(
+                          height: screenHeight * 0.008,
+                        ),
+
+                        // ==================================
+                        // ACTION MOVIES
+                        // ==================================
+
+                        SizedBox(
+                          height: actionCardHeight,
+
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+
+                            physics:
+                                const BouncingScrollPhysics(),
+
+                            padding: EdgeInsets.symmetric(
+                              horizontal: horizontalPadding,
+                            ),
+
+                            itemCount: actionMovies.length,
+
+                            itemBuilder: (context, index) {
+
+                              return actionMovieCard(
+                                image: actionMovies[index],
+                                width: actionCardWidth,
+                                height: actionCardHeight,
+                                screenWidth: screenWidth,
+                              );
+                            },
+                          ),
+                        ),
+
+                        SizedBox(
+                          height: screenHeight * 0.025,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // ==========================================
+                // BOTTOM NAVIGATION
+                // ==========================================
+
+                Container(
+                  width: availableWidth,
+
+                  height: bottomNavHeight,
+
+                  margin: EdgeInsets.only(
+                    left: horizontalPadding,
+                    right: horizontalPadding,
+                    top: screenHeight * 0.008,
+                    bottom: screenHeight * 0.008,
+                  ),
+
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF282A28),
+
+                    borderRadius: BorderRadius.circular(
+                      screenWidth * 0.045,
+                    ),
+                  ),
+
+                  child: Row(
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceAround,
+
+                    children: [
+
+                      // HOME - ACTIVE
+
+                      Icon(
+                        Icons.home,
+                        color: yellow,
+                        size: screenWidth * 0.065,
+                      ),
+
+                      // SEARCH
+
+                      IconButton(
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const SearchScreen(),
+                            ),
+                          );
+                        },
+
+                        icon: Icon(
+                          Icons.search,
+                          color: Colors.white,
+                          size: screenWidth * 0.065,
+                        ),
+                      ),
+
+                      // EXPLORE
+
+                      Icon(
+                        Icons.explore,
+                        color: Colors.white,
+                        size: screenWidth * 0.065,
+                      ),
+
+                      // PROFILE
+
+                      IconButton(
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const ProfileScreen(),
+                            ),
+                          );
+                        },
+
+                        icon: Icon(
+                          Icons.person_outline,
+                          color: Colors.white,
+                          size: screenWidth * 0.065,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+========== lib\search_screen.dart ==========
+import 'package:flutter/material.dart';
+
+import 'ProfileScreen.dart';
+import 'HomeScreen.dart';
+
+class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
+
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
+
+  static const Color yellow = Color(0xFFF6BD00);
+  static const Color bg = Color(0xFF121312);
+
+  final TextEditingController searchController =
+      TextEditingController();
+
+  bool showMovies = false;
+
+  final List<String> movies = [
+    'assets/search1.png',
+    'assets/search2.jpg',
+    'assets/search3.jpg',
+    'assets/search4.jpg',
+    'assets/search5.jpg',
+    'assets/search6.jpg',
+  ];
+
+  // SEARCH FUNCTION
+
+  void searchMovies(String value) {
+    setState(() {
+      showMovies =
+          value.trim().toLowerCase() == 'marvel';
+    });
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+
+    final screenSize = MediaQuery.sizeOf(context);
+
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
+
+    final horizontalPadding = screenWidth * 0.04;
+
+    final bottomNavHeight =
+        (screenHeight * 0.065).clamp(58.0, 85.0);
+
+    return Scaffold(
+      backgroundColor: bg,
+
+      body: SafeArea(
+        child: Column(
+          children: [
+
+            // =================================
+            // SEARCH BAR
+            // =================================
+
+            Padding(
+              padding: EdgeInsets.only(
+                left: horizontalPadding,
+                right: horizontalPadding,
+                top: 21,
+              ),
+
+              child: Container(
+                height: 55.72,
+
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                ),
+
+                decoration: BoxDecoration(
+                  color: const Color(0xFF282A28),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+
+                child: Row(
+                  children: [
+
+                    const Icon(
+                      Icons.search,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    Expanded(
+                      child: TextField(
+                        controller: searchController,
+
+                        onChanged: searchMovies,
+
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+
+                        cursorColor: yellow,
+
+                        decoration: const InputDecoration(
+                          hintText: 'Search',
+                          hintStyle: TextStyle(
+                            color: Colors.white,
+                          ),
+                          border: InputBorder.none,
+                          isCollapsed: true,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // =================================
+            // MOVIES GRID / EMPTY IMAGE
+            // =================================
+
+            Expanded(
+              child: showMovies
+
+                  ? LayoutBuilder(
+                      builder: (context, constraints) {
+
+                        final availableWidth =
+                            constraints.maxWidth -
+                            (horizontalPadding * 2);
+
+                        final itemWidth =
+                            (availableWidth - 12) / 2;
+
+                        return GridView.builder(
+
+                          padding: EdgeInsets.fromLTRB(
+                            horizontalPadding,
+                            10,
+                            horizontalPadding,
+                            10,
+                          ),
+
+                          itemCount: movies.length,
+
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+
+                            childAspectRatio: itemWidth /
+                                (itemWidth / 0.68),
+                          ),
+
+                          itemBuilder: (context, index) {
+
+                            return ClipRRect(
+                              borderRadius:
+                                  BorderRadius.circular(14),
+
+                              child: Stack(
+                                children: [
+
+                                  // MOVIE IMAGE
+
+                                  Positioned.fill(
+                                    child: Image.asset(
+                                      movies[index],
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+
+                                  // MOVIE RATING
+
+                                  Positioned(
+                                    top: 8,
+                                    left: 8,
+
+                                    child: Container(
+                                      padding:
+                                          const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+
+                                      decoration: BoxDecoration(
+                                        color: Colors.black
+                                            .withOpacity(0.65),
+
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                      ),
+
+                                      child: Row(
+                                        mainAxisSize:
+                                            MainAxisSize.min,
+
+                                        children: [
+
+                                          const Text(
+                                            '7.7',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight:
+                                                  FontWeight.w600,
+                                            ),
+                                          ),
+
+                                          const SizedBox(width: 4),
+
+                                          const Icon(
+                                            Icons.star,
+                                            color: yellow,
+                                            size: 15,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    )
+
+                  : Center(
+                      child: Image.asset(
+                        'assets/Empty.png',
+                        width: screenWidth * 0.30,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+            ),
+
+            // =================================
+            // BOTTOM NAVIGATION
+            // =================================
+
+            Container(
+              width: screenWidth -
+                  (horizontalPadding * 2),
+
+              height: bottomNavHeight,
+
+              margin: EdgeInsets.only(
+                left: horizontalPadding,
+                right: horizontalPadding,
+                top: screenHeight * 0.008,
+                bottom: screenHeight * 0.008,
+              ),
+
+              decoration: BoxDecoration(
+                color: const Color(0xFF282A28),
+
+                borderRadius: BorderRadius.circular(
+                  screenWidth * 0.045,
+                ),
+              ),
+
+              child: Row(
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceAround,
+
+                children: [
+
+                  // HOME
+
+                  IconButton(
+                    onPressed: () {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const HomeScreen(),
+                        ),
+                        (route) => false,
+                      );
+                    },
+
+                    icon: Icon(
+                      Icons.home,
+                      color: Colors.white,
+                      size: screenWidth * 0.065,
+                    ),
+                  ),
+
+                  // SEARCH ACTIVE
+
+                  Icon(
+                    Icons.search,
+                    color: yellow,
+                    size: screenWidth * 0.065,
+                  ),
+
+                  // EXPLORE
+
+                  IconButton(
+                    onPressed: () {
+                      // Explore page will be connected later
+                    },
+
+                    icon: Icon(
+                      Icons.explore,
+                      color: Colors.white,
+                      size: screenWidth * 0.065,
+                    ),
+                  ),
+
+                  // PROFILE
+
+                  IconButton(
+                    onPressed: () {
+
+                      Navigator.pushReplacement(
+                        context,
+
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const ProfileScreen(),
+                        ),
+                      );
+                    },
+
+                    icon: Icon(
+                      Icons.person_outline,
+                      color: Colors.white,
+                      size: screenWidth * 0.065,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+========== lib\ProfileScreen.dart ==========
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import 'HomeScreen.dart';
+import 'search_screen.dart';
+
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  static const Color yellow = Color(0xFFF6BD00);
+  static const Color bg = Color(0xFF111111);
+  static const Color topBg = Color(0xFF212121);
+
+  int selectedTab = 0;
+
+  final List<String> historyMovies = [
+    'assets/search1.png',
+    'assets/search2.jpg',
+    'assets/search3.jpg',
+    'assets/search4.jpg',
+    'assets/search5.jpg',
+    'assets/search6.jpg',
+    'assets/movie1.jpg',
+    'assets/movie2.jpg',
+    'assets/movie3.jpg',
+    'assets/movie4.jpg',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.sizeOf(context);
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
+
+    final horizontalPadding = screenWidth * 0.04;
+
+    final bottomNavHeight =
+        (screenHeight * 0.065).clamp(58.0, 85.0);
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: topBg,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: bg,
+        body: SafeArea(
+          child: Column(
+            children: [
+
+              // TOP SECTION - FULL WIDTH
+              Container(
+                width: double.infinity,
+                color: topBg,
+                child: Column(
+                  children: [
+
+                    // PROFILE INFORMATION
+                    Container(
+                      width: double.infinity,
+                      margin: EdgeInsets.zero,
+                      padding: const EdgeInsets.all(12),
+                      color: topBg,
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+
+                              // PROFILE IMAGE
+                              Expanded(
+                                flex: 3,
+                                child: Column(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: screenWidth * 0.105,
+                                      backgroundColor:
+                                          const Color(0xFF82D7E8),
+                                      backgroundImage:
+                                          const AssetImage(
+                                        'assets/Avatar2.png',
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 8),
+
+                                    const Text(
+                                      'John Safwat',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // WISH LIST
+                              Expanded(
+                                flex: 2,
+                                child: Column(
+                                  children: const [
+                                    Text(
+                                      '0',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+
+                                    SizedBox(height: 10),
+
+                                    Text(
+                                      'Wish List',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // HISTORY
+                              Expanded(
+                                flex: 2,
+                                child: Column(
+                                  children: const [
+                                    Text(
+                                      '10',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+
+                                    SizedBox(height: 10),
+
+                                    Text(
+                                      'History',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // EDIT PROFILE + EXIT
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: SizedBox(
+                                  height: 42,
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      // Edit Profile will be connected later
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: yellow,
+                                      foregroundColor: Colors.black,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Edit Profile',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(width: 8),
+
+                              Expanded(
+                                child: SizedBox(
+                                  height: 42,
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          const Color(0xFFEB2525),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: const Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text('Exit'),
+                                        SizedBox(width: 5),
+                                        Icon(
+                                          Icons.logout,
+                                          size: 17,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // WATCH LIST / HISTORY TABS
+                    SizedBox(
+                      width: double.infinity,
+                      height: 66,
+                      child: Row(
+                        children: [
+
+                          // WATCH LIST
+                          Expanded(
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  selectedTab = 0;
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: selectedTab == 0
+                                          ? yellow
+                                          : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.list,
+                                      color: selectedTab == 0
+                                          ? yellow
+                                          : Colors.white,
+                                      size: 25,
+                                    ),
+
+                                    const SizedBox(height: 3),
+
+                                    const Text(
+                                      'Watch List',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // HISTORY
+                          Expanded(
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  selectedTab = 1;
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: selectedTab == 1
+                                          ? yellow
+                                          : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.folder,
+                                      color: selectedTab == 1
+                                          ? yellow
+                                          : Colors.white,
+                                      size: 25,
+                                    ),
+
+                                    const SizedBox(height: 3),
+
+                                    const Text(
+                                      'History',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // BOTTOM SECTION
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  color: bg,
+                  child: Column(
+                    children: [
+
+                      // TAB CONTENT
+                      Expanded(
+                        child: selectedTab == 0
+
+                            // WATCH LIST EMPTY
+                            ? Center(
+                                child: Image.asset(
+                                  'assets/Empty.png',
+                                  width: screenWidth * 0.30,
+                                  fit: BoxFit.contain,
+                                ),
+                              )
+
+                            // HISTORY GRID
+                            : GridView.builder(
+                                padding: EdgeInsets.fromLTRB(
+                                  horizontalPadding,
+                                  14,
+                                  horizontalPadding,
+                                  14,
+                                ),
+                                itemCount: historyMovies.length,
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: 10,
+                                  mainAxisSpacing: 12,
+                                  childAspectRatio: 0.62,
+                                ),
+                                itemBuilder: (context, index) {
+                                  return ClipRRect(
+                                    borderRadius:
+                                        BorderRadius.circular(12),
+                                    child: Stack(
+                                      children: [
+
+                                        // MOVIE POSTER
+                                        Positioned.fill(
+                                          child: Image.asset(
+                                            historyMovies[index],
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+
+                                        // RATING
+                                        Positioned(
+                                          top: 7,
+                                          left: 6,
+                                          child: Container(
+                                            padding:
+                                                const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 3,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black
+                                                  .withOpacity(0.65),
+                                              borderRadius:
+                                                  BorderRadius.circular(7),
+                                            ),
+                                            child: const Row(
+                                              mainAxisSize:
+                                                  MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  '7.7',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight:
+                                                        FontWeight.w600,
+                                                  ),
+                                                ),
+
+                                                SizedBox(width: 2),
+
+                                                Icon(
+                                                  Icons.star,
+                                                  color: yellow,
+                                                  size: 12,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+
+                      // BOTTOM NAVIGATION
+                      Container(
+                        width: screenWidth -
+                            (horizontalPadding * 2),
+                        height: bottomNavHeight,
+                        margin: EdgeInsets.only(
+                          left: horizontalPadding,
+                          right: horizontalPadding,
+                          top: screenHeight * 0.008,
+                          bottom: screenHeight * 0.008,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF282A28),
+                          borderRadius: BorderRadius.circular(
+                            screenWidth * 0.045,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceAround,
+                          children: [
+
+                            // HOME
+                            IconButton(
+                              onPressed: () {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const HomeScreen(),
+                                  ),
+                                  (route) => false,
+                                );
+                              },
+                              icon: Icon(
+                                Icons.home,
+                                color: Colors.white,
+                                size: screenWidth * 0.065,
+                              ),
+                            ),
+
+                            // SEARCH
+                            IconButton(
+                              onPressed: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const SearchScreen(),
+                                  ),
+                                );
+                              },
+                              icon: Icon(
+                                Icons.search,
+                                color: Colors.white,
+                                size: screenWidth * 0.065,
+                              ),
+                            ),
+
+                            // EXPLORE
+                            IconButton(
+                              onPressed: () {
+                                // Explore page will be connected later
+                              },
+                              icon: Icon(
+                                Icons.explore,
+                                color: Colors.white,
+                                size: screenWidth * 0.065,
+                              ),
+                            ),
+
+                            // PROFILE ACTIVE
+                            Icon(
+                              Icons.person_outline,
+                              color: yellow,
+                              size: screenWidth * 0.065,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+========== lib\member3_hub_screen.dart ==========
+import 'package:flutter/material.dart';
+
+import 'member3/models/movie.dart';
+import 'member3/screens/movie_details_screen.dart';
+import 'member3/services/preview_movie_service.dart';
+import 'member3/widgets/movie_poster.dart';
+import 'member3_bridge.dart';
+
+/// Temporary integration hub. It can open real YTS details and saved movies
+/// while Member 2's Home remains untouched.
+class Member3HubScreen extends StatefulWidget {
+  const Member3HubScreen({super.key});
+
+  @override
+  State<Member3HubScreen> createState() => _Member3HubScreenState();
+}
+
+class _Member3HubScreenState extends State<Member3HubScreen> {
+  late Future<List<Movie>> _movies;
+  final TextEditingController _movieId = TextEditingController(text: '15');
+
+  @override
+  void initState() {
+    super.initState();
+    _movies = Member3Bridge.movieService.listDemoMovies();
+  }
+
+  @override
+  void dispose() {
+    _movieId.dispose();
+    super.dispose();
+  }
+
+  void _openMovie(int id) {
+    Member3Bridge.openDetails(context, id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cloud = Member3Bridge.isFirebaseReady;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Movie Details & My Movies'),
+        actions: [
+          IconButton(
+            tooltip: 'Saved Movies',
+            onPressed: () => Member3Bridge.openSavedMovies(context),
+            icon: const Icon(Icons.favorite),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(children: [
+                Icon(cloud ? Icons.cloud_done : Icons.cloud_off_outlined),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(cloud
+                      ? 'Signed in: favorites and watchlist use Firebase Firestore.'
+                      : 'Demo storage: favorites/watchlist are temporary until team Firebase is configured and the user signs in.'),
+                ),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(
+              child: TextField(
+                controller: _movieId,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'YTS Movie ID',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(
+              onPressed: () {
+                final id = int.tryParse(_movieId.text.trim());
+                if (id == null || id <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a valid movie ID')),
+                  );
+                  return;
+                }
+                _openMovie(id);
+              },
+              child: const Text('Open'),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.favorite_border),
+            label: const Text('Open Favorites & Watchlist'),
+            onPressed: () => Member3Bridge.openSavedMovies(context),
+          ),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.visibility_outlined),
+            label: const Text('Offline UI preview'),
+            onPressed: () {
+              Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
+                  builder: (_) => MovieDetailsScreen(
+                    movieId: 99999,
+                    movieService: PreviewMovieService(),
+                    bookmarks: Member3Bridge.bookmarks,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 22),
+          Text('Live movies (YTS API)', style: Theme.of(context).textTheme.titleLarge),
+          FutureBuilder<List<Movie>>(
+            future: _movies,
+            builder: (context, snap) {
+              if (snap.connectionState != ConnectionState.done) {
+                return const Padding(
+                  padding: EdgeInsets.all(30),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (snap.hasError) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Could not load movies. Check the YTS API or internet.'),
+                    SelectableText('${snap.error}'),
+                    TextButton(
+                      onPressed: () => setState(
+                        () => _movies = Member3Bridge.movieService.listDemoMovies(),
+                      ),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                );
+              }
+              final results = snap.data ?? <Movie>[];
+              if (results.isEmpty) return const Text('No movies were returned.');
+              return Column(
+                children: results.map((movie) => ListTile(
+                  leading: MoviePoster(url: movie.posterUrl, width: 52, height: 68),
+                  title: Text(movie.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  subtitle: Text('ID ${movie.id}  â€¢  â˜… ${movie.rating}'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _openMovie(movie.id),
+                )).toList(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
